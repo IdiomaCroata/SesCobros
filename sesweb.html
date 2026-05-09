@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>SesWeb</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f5f2ee;
+    --surface: #ffffff;
+    --surface2: #f0ece6;
+    --border: #e0d9d0;
+    --text: #1a1714;
+    --text2: #6b6560;
+    --accent: #2d6a4f;
+    --accent-light: #e8f3ee;
+    --accent2: #c8533a;
+    --accent2-light: #fdf0ed;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--accent);
+    color: white;
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: 0.3px;
+    margin-bottom: 12px;
+  }
+  .search-wrap {
+    position: relative;
+  }
+  .search-wrap input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border-radius: 50px;
+    border: none;
+    background: rgba(255,255,255,0.18);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: background 0.2s;
+  }
+  .search-wrap input::placeholder { color: rgba(255,255,255,0.65); }
+  .search-wrap input:focus { background: rgba(255,255,255,0.25); }
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.75;
+    font-size: 16px;
+  }
+
+  /* SYNC STATUS */
+  .sync-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 20px;
+    font-size: 12px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .sync-dot.loading {
+    background: #f0a500;
+    animation: pulse 1s infinite;
+  }
+  .sync-dot.error { background: var(--accent2); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* MAIN */
+  .main { padding: 16px; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1;
+    padding: 9px 4px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* LISTS */
+  .list { display: none; }
+  .list.active { display: block; }
+
+  /* PACIENTE CARD */
+  .pac-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .pac-card:active { transform: scale(0.985); }
+  .pac-card-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pac-name {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 2px;
+  }
+  .pac-meta {
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .pac-deuda {
+    text-align: right;
+  }
+  .deuda-label {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 2px;
+  }
+  .deuda-amount {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--accent2);
+  }
+  .deuda-amount.zero { color: var(--accent); }
+
+  /* PENDIENTE CARD */
+  .pend-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .pend-pac-header {
+    background: var(--accent-light);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .pend-pac-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--accent);
+  }
+  .pend-total {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--accent2);
+  }
+  .pend-row {
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--surface2);
+    font-size: 14px;
+  }
+  .pend-row:last-child { border-bottom: none; }
+  .pend-dia { color: var(--text2); font-size: 12px; }
+  .pend-saldo { font-weight: 600; }
+  .whatsapp-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 16px 14px;
+    background: #25d366;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    width: calc(100% - 32px);
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .whatsapp-btn:active { background: #1da851; }
+
+  /* SESIONES */
+  .ses-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .ses-row {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--surface2);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+    font-size: 13px;
+  }
+  .ses-row:last-child { border-bottom: none; }
+  .ses-pac {
+    grid-column: 1 / -1;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .ses-label { font-size: 11px; color: var(--text2); }
+  .ses-val { font-weight: 500; }
+  .ses-saldo-neg { color: var(--accent2); font-weight: 600; }
+  .ses-obs {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    color: var(--text2);
+    font-style: italic;
+    margin-top: 4px;
+  }
+
+  /* EMPTY / LOADING */
+  .empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text2);
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; }
+
+  /* MODAL PACIENTE */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 20px;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+  .modal-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+  .modal-close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    background: var(--surface2);
+    border: none;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text2);
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .info-item {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .info-item.full { grid-column: 1/-1; }
+  .info-item-label { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+  .info-item-val { font-weight: 600; font-size: 15px; }
+  .info-item-val.red { color: var(--accent2); }
+  .info-item-val.green { color: var(--accent); }
+
+  .section-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    margin-top: 4px;
+  }
+
+  /* FILTRO PACIENTE EN SESIONES */
+  .filter-pac {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-pac span {
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-weight: 600;
+  }
+  .filter-pac button {
+    background: none;
+    border: none;
+    color: var(--accent2);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .count-badge {
+    display: inline-block;
+    background: var(--surface2);
+    color: var(--text2);
+    border-radius: 50px;
+    font-size: 11px;
+    padding: 2px 8px;
+    margin-left: 6px;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SesWeb 🗂️</h1>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Buscar paciente..." oninput="filtrar()">
+  </div>
+</div>
+
+<div class="sync-bar" id="syncBar">
+  <div class="sync-dot loading" id="syncDot"></div>
+  <span id="syncMsg">Cargando datos...</span>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="cambiarTab('pendientes', this)">
+      Pendientes <span class="count-badge" id="cnt-pendientes">—</span>
+    </button>
+    <button class="tab" onclick="cambiarTab('pacientes', this)">
+      Pacientes <span class="count-badge" id="cnt-pacientes">—</span>
+    </button>
+    <button class="tab" onclick="cambiarTab('sesiones', this)">
+      Sesiones <span class="count-badge" id="cnt-sesiones">—</span>
+    </button>
+  </div>
+
+  <!-- PENDIENTES -->
+  <div class="list active" id="list-pendientes">
+    <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div>
+  </div>
+
+  <!-- PACIENTES -->
+  <div class="list" id="list-pacientes">
+    <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div>
+  </div>
+
+  <!-- SESIONES -->
+  <div class="list" id="list-sesiones">
+    <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div>
+  </div>
+</div>
+
+<!-- MODAL PACIENTE -->
+<div class="modal-overlay" id="modalOverlay" onclick="cerrarModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="cerrarModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIGURACIÓN — solo tocá estas dos líneas
+// ═══════════════════════════════════════════════
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxs6qdJ1CA1aq8MGgemvgWlJMATYhhKThV21ZX30Q0zhUGtG1zgVTQCkUiRdu3cePqn/exec';
+const TOKEN = 'w3m69sQW0vDC-+S814D&%248XpRD938d4km5=ns-qlfkids';
+// ═══════════════════════════════════════════════
+
+let datos = { pendientes: [], pacientes: [], sesiones: [] };
+let tabActual = 'pendientes';
+let filtroPaciente = null;
+
+async function cargarDatos() {
+  setSyncStatus('loading', 'Cargando datos...');
+  try {
+    const url = `${APPS_SCRIPT_URL}?token=${encodeURIComponent(TOKEN)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Respuesta inválida');
+    datos.pendientes = json.pendientes || [];
+    datos.pacientes  = json.pacientes  || [];
+    datos.sesiones   = json.sesiones   || [];
+    setSyncStatus('ok', `Actualizado · ${datos.pendientes.length} pendientes · ${datos.pacientes.length} pacientes · ${datos.sesiones.length} sesiones`);
+    renderizar();
+  } catch (err) {
+    setSyncStatus('error', 'Error al cargar datos. Verificá la conexión.');
+    console.error(err);
+  }
+}
+
+function setSyncStatus(tipo, msg) {
+  const dot = document.getElementById('syncDot');
+  dot.className = 'sync-dot' + (tipo === 'loading' ? ' loading' : tipo === 'error' ? ' error' : '');
+  document.getElementById('syncMsg').textContent = msg;
+}
+
+function fmt(n) {
+  const num = parseFloat(String(n).replace(/\./g, '').replace(',', '.'));
+  if (isNaN(num)) return n;
+  return num.toLocaleString('es-AR');
+}
+
+// ─── RENDERIZAR ───────────────────────────────
+function renderizar() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  renderPendientes(q);
+  renderPacientes(q);
+  renderSesiones(q);
+}
+
+function renderPendientes(q) {
+  // Agrupar por paciente
+  const grupos = {};
+  datos.pendientes.forEach(r => {
+    const key = r.IDPAC || r.PACIENTE;
+    if (!grupos[key]) grupos[key] = { nombre: r.PACIENTE, idpac: r.IDPAC, rows: [], total: 0 };
+    grupos[key].rows.push(r);
+    grupos[key].total += parseFloat(r.SALDO) || 0;
+  });
+
+  const lista = Object.values(grupos).filter(g =>
+    !q || g.nombre.toLowerCase().includes(q)
+  );
+
+  document.getElementById('cnt-pendientes').textContent = lista.length;
+
+  if (!lista.length) {
+    document.getElementById('list-pendientes').innerHTML =
+      `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">${q ? 'Sin resultados' : 'Sin deudas pendientes'}</div></div>`;
+    return;
+  }
+
+  const html = lista.map(g => {
+    const filas = g.rows.map(r =>
+      `<div class="pend-row">
+        <div>
+          <div>${r.FECHA}</div>
+          <div class="pend-dia">${r.DIA}</div>
+        </div>
+        <div class="pend-saldo">$${fmt(r.SALDO)}</div>
+      </div>`
+    ).join('');
+
+    // Buscar teléfono en pacientes
+    const pac = datos.pacientes.find(p => (p.IDPAC || p.PACIENTE) === (g.idpac || g.nombre));
+    const tel = pac ? pac.TELEFONO : '';
+    const nombre = pac ? pac.NOMBRE : g.nombre.split(' ')[0];
+
+    const waMensaje = armarMensaje(nombre, g.rows, g.total);
+    const waUrl = tel
+      ? `https://wa.me/54${tel}?text=${encodeURIComponent(waMensaje)}`
+      : `https://wa.me/?text=${encodeURIComponent(waMensaje)}`;
+
+    return `<div class="pend-card">
+      <div class="pend-pac-header">
+        <div class="pend-pac-name">${g.nombre}</div>
+        <div class="pend-total">$${fmt(g.total)}</div>
+      </div>
+      ${filas}
+      <button class="whatsapp-btn" onclick="window.open('${waUrl}','_blank')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Enviar por WhatsApp
+      </button>
+    </div>`;
+  }).join('');
+
+  document.getElementById('list-pendientes').innerHTML = html;
+}
+
+function armarMensaje(nombre, rows, total) {
+  const detalle = rows.map(r => `• ${r.DIA} ${r.FECHA}: $${fmt(r.SALDO)}`).join('\n');
+  return `Hola ${nombre}. Te envío el detalle de tus sesiones pendientes:\n\n${detalle}\n\nTotal: $${fmt(total)}\n\nCuando puedas realizá la transferencia o avisame si necesitás coordinar algo. Saludos.`;
+}
+
+function renderPacientes(q) {
+  const lista = datos.pacientes.filter(p =>
+    !q || p.PACIENTE.toLowerCase().includes(q)
+  );
+  document.getElementById('cnt-pacientes').textContent = lista.length;
+
+  if (!lista.length) {
+    document.getElementById('list-pacientes').innerHTML =
+      `<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">${q ? 'Sin resultados' : 'Sin pacientes'}</div></div>`;
+    return;
+  }
+
+  const html = lista.map(p => {
+    const deuda = parseFloat(p.DEUDA) || 0;
+    return `<div class="pac-card" onclick="abrirPaciente('${(p.IDPAC || p.PACIENTE).replace(/'/g,"\\'")}')">
+      <div class="pac-card-header">
+        <div>
+          <div class="pac-name">${p.PACIENTE}</div>
+          <div class="pac-meta">Últ. sesión: ${p.ULTACT} · Hon: $${fmt(p.HONORARIO)}</div>
+        </div>
+        <div class="pac-deuda">
+          <div class="deuda-label">Deuda</div>
+          <div class="deuda-amount ${deuda === 0 ? 'zero' : ''}">$${fmt(p.DEUDA)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('list-pacientes').innerHTML = html;
+}
+
+function renderSesiones(q) {
+  let lista = datos.sesiones;
+  if (filtroPaciente) {
+    lista = lista.filter(s => (s.IDPAC || s.PACIENTE) === filtroPaciente);
+  }
+  if (q) {
+    lista = lista.filter(s => s.PACIENTE.toLowerCase().includes(q));
+  }
+  document.getElementById('cnt-sesiones').textContent = lista.length;
+
+  const cont = document.getElementById('list-sesiones');
+  let extra = '';
+  if (filtroPaciente) {
+    const pac = datos.pacientes.find(p => (p.IDPAC || p.PACIENTE) === filtroPaciente);
+    const nombre = pac ? pac.PACIENTE : filtroPaciente;
+    extra = `<div class="filter-pac">Filtrando: <span>${nombre}</span> <button onclick="limpiarFiltro()">✕ Ver todos</button></div>`;
+  }
+
+  if (!lista.length) {
+    cont.innerHTML = extra + `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">${q || filtroPaciente ? 'Sin resultados' : 'Sin sesiones'}</div></div>`;
+    return;
+  }
+
+  const html = lista.map(s => {
+    const saldo = parseFloat(s.SALDO) || 0;
+    const obs = s.OBS ? `<div class="ses-obs">📝 ${s.OBS}</div>` : '';
+    return `<div class="ses-card">
+      <div class="ses-row">
+        <div class="ses-pac">${s.PACIENTE}</div>
+        <div>
+          <div class="ses-label">Fecha</div>
+          <div class="ses-val">${s.FECHA}</div>
+          <div class="ses-label">${s.DIA}</div>
+        </div>
+        <div>
+          <div class="ses-label">Importe</div>
+          <div class="ses-val">$${fmt(s.IMPORTE)}</div>
+        </div>
+        <div>
+          <div class="ses-label">Saldo</div>
+          <div class="ses-val ${saldo > 0 ? 'ses-saldo-neg' : ''}">$${fmt(s.SALDO)}</div>
+        </div>
+        ${obs}
+      </div>
+    </div>`;
+  }).join('');
+
+  cont.innerHTML = extra + html;
+}
+
+// ─── MODAL PACIENTE ───────────────────────────
+function abrirPaciente(key) {
+  const p = datos.pacientes.find(x => (x.IDPAC || x.PACIENTE) === key);
+  if (!p) return;
+
+  const deuda = parseFloat(p.DEUDA) || 0;
+  const sesiones = datos.sesiones.filter(s => (s.IDPAC || s.PACIENTE) === key);
+  const pendientes = datos.pendientes.filter(s => (s.IDPAC || s.PACIENTE) === key);
+
+  const waLink = p.TELEFONO
+    ? `<a href="tel:${p.TELEFONO}" style="color:var(--accent);font-weight:600;">${p.TELEFONO}</a>`
+    : 'Sin teléfono';
+
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-title">${p.PACIENTE}</div>
+    <div class="modal-subtitle">${p.NOMBRE ? 'Nombre de pila: ' + p.NOMBRE : ''}</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-item-label">Honorario</div>
+        <div class="info-item-val">$${fmt(p.HONORARIO)}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-item-label">Deuda total</div>
+        <div class="info-item-val ${deuda > 0 ? 'red' : 'green'}">$${fmt(p.DEUDA)}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-item-label">Última sesión</div>
+        <div class="info-item-val">${p.ULTACT}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-item-label">Teléfono</div>
+        <div class="info-item-val" style="font-size:14px">${waLink}</div>
+      </div>
+    </div>
+    <div class="section-title">Sesiones recientes (${sesiones.length})</div>
+    <button onclick="verSesionesPaciente('${key}')" style="width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--accent);background:var(--accent-light);color:var(--accent);font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;margin-bottom:12px;">
+      Ver ${sesiones.length} sesiones de este paciente
+    </button>
+    ${pendientes.length ? `
+    <div class="section-title">Sesiones pendientes (${pendientes.length})</div>
+    ${pendientes.map(r => `<div class="pend-row" style="background:var(--accent2-light);border-radius:8px;margin-bottom:6px;">
+      <div>${r.FECHA} — ${r.DIA}</div>
+      <div class="pend-saldo">$${fmt(r.SALDO)}</div>
+    </div>`).join('')}` : ''}
+  `;
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function verSesionesPaciente(key) {
+  cerrarModal();
+  filtroPaciente = key;
+  cambiarTabDirecto('sesiones');
+}
+
+function limpiarFiltro() {
+  filtroPaciente = null;
+  renderizar();
+}
+
+function cerrarModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+// ─── TABS Y FILTRO ────────────────────────────
+function cambiarTab(nombre, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.list').forEach(l => l.classList.remove('active'));
+  document.getElementById('list-' + nombre).classList.add('active');
+  tabActual = nombre;
+}
+
+function cambiarTabDirecto(nombre) {
+  const tabs = document.querySelectorAll('.tab');
+  const idx = { pendientes: 0, pacientes: 1, sesiones: 2 }[nombre];
+  tabs.forEach(t => t.classList.remove('active'));
+  tabs[idx].classList.add('active');
+  document.querySelectorAll('.list').forEach(l => l.classList.remove('active'));
+  document.getElementById('list-' + nombre).classList.add('active');
+  tabActual = nombre;
+  renderizar();
+}
+
+function filtrar() { renderizar(); }
+
+// ─── INICIO ───────────────────────────────────
+cargarDatos();
+</script>
+</body>
+</html>
