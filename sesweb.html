@@ -104,24 +104,40 @@
   </div>
 </div>
 <script>
-const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxs6qdJ1CA1aq8MGgemvgWlJMATYhhKThV21ZX30Q0zhUGtG1zgVTQCkUiRdu3cePqn/exec';
-const TOKEN='SesCobros2026TokenSeguro';
+const SHEET_ID='1MzqVv_6UZzcHIUuIj4PUVBS1NC9wMKCfF2lGKhyvB94';
+const API_KEY='AIzaSyAbXfah4gRFV7OoCi3kEN6j2f0oUxzOBwE';
+const HOJAS={concilio:'Concilio',usuarios:'Usuarios',todas:'Todas'};
 let datos={concilio:[],usuarios:[],todas:[]};
 let tabActual='concilio';
 let filtroUsuario=null;
 
+async function leerHoja(nombre){
+  const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(nombre)+'?key='+API_KEY;
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('Error leyendo '+nombre+': '+res.status);
+  const json=await res.json();
+  const rows=json.values||[];
+  if(rows.length<2) return [];
+  const headers=rows[0];
+  return rows.slice(1).map(row=>{
+    const obj={};
+    headers.forEach((h,i)=>obj[h]=row[i]||'');
+    return obj;
+  });
+}
+
 async function cargarDatos(){
   setSyncStatus('loading','Cargando datos...');
   try{
-    const url=APPS_SCRIPT_URL+'?token='+TOKEN;
-    const res=await fetch(url);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const json=await res.json();
-    if(!json.ok) throw new Error(json.error||'Error');
-    datos.concilio=json.concilio||[];
-    datos.usuarios=json.usuarios||[];
-    datos.todas=json.todas||[];
-    setSyncStatus('ok','Actualizado · '+datos.concilio.length+' en concilio · '+datos.usuarios.length+' usuarios · '+datos.todas.length+' sesiones');
+    const [c,u,t]=await Promise.all([
+      leerHoja(HOJAS.concilio),
+      leerHoja(HOJAS.usuarios),
+      leerHoja(HOJAS.todas)
+    ]);
+    datos.concilio=c;
+    datos.usuarios=u;
+    datos.todas=t;
+    setSyncStatus('ok','Actualizado · '+c.length+' en concilio · '+u.length+' usuarios · '+t.length+' sesiones');
     renderizar();
   }catch(err){
     setSyncStatus('error','Error al cargar datos: '+err.message);
@@ -138,7 +154,7 @@ function setSyncStatus(tipo,msg){
 function fmtFecha(val){
   if(!val||val==='') return '';
   const s=String(val).trim();
-  const m=s.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2,4})$/);
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if(m){
     const d=m[1].padStart(2,'0');
     const mo=m[2].padStart(2,'0');
@@ -149,7 +165,7 @@ function fmtFecha(val){
 }
 
 function fmt(n){
-  const num=parseFloat(String(n).replace(/\\./g,'').replace(',','.'));
+  const num=parseFloat(String(n).replace(/\./g,'').replace(',','.'));
   if(isNaN(num)) return n;
   return num.toLocaleString('es-AR');
 }
@@ -167,7 +183,7 @@ function renderConcilio(q){
     const key=r.IDPAC||r.USUARIO;
     if(!grupos[key]) grupos[key]={nombre:r.USUARIO,idpac:r.IDPAC,rows:[],total:0};
     grupos[key].rows.push(r);
-    grupos[key].total+=parseFloat(String(r.SALDO).replace(/\\./g,'').replace(',','.'))||0;
+    grupos[key].total+=parseFloat(String(r.SALDO).replace(/\./g,'').replace(',','.'))||0;
   });
   const lista=Object.values(grupos).filter(g=>!q||g.nombre.toLowerCase().includes(q));
   document.getElementById('cnt-concilio').textContent=lista.length;
@@ -188,8 +204,8 @@ function renderConcilio(q){
 }
 
 function armarMensaje(nombre,rows,total){
-  const detalle=rows.map(r=>'• '+r.DIA+' '+fmtFecha(r.FECHA)+': $'+fmt(r.SALDO)).join('\\n');
-  return 'Hola '+nombre+'. Te envío el detalle de lo pendiente:\\n\\n'+detalle+'\\n\\nTotal: $'+fmt(total)+'\\n\\nSaludos.';
+  const detalle=rows.map(r=>'• '+r.DIA+' '+fmtFecha(r.FECHA)+': $'+fmt(r.SALDO)).join('\n');
+  return 'Hola '+nombre+'. Te envío el detalle de lo pendiente:\n\n'+detalle+'\n\nTotal: $'+fmt(total)+'\n\nSaludos.';
 }
 
 function renderUsuarios(q){
@@ -200,8 +216,8 @@ function renderUsuarios(q){
     return;
   }
   const html=lista.map(p=>{
-    const deuda=parseFloat(String(p.DEUDA).replace(/\\./g,'').replace(',','.'))||0;
-    return '<div class="pac-card" onclick="abrirUsuario(\''+((p.IDPAC||p.USUARIO).replace(/\'/g,"\\'"))+'\')">'+'<div class="pac-card-header"><div><div class="pac-name">'+p.USUARIO+'</div><div class="pac-meta">Últ. sesión: '+fmtFecha(p.ULTACT)+' · Hon: $'+fmt(p.HONORARIO)+'</div></div><div class="pac-deuda"><div class="deuda-label">Deuda</div><div class="deuda-amount'+(deuda===0?' zero':'')+'">$'+fmt(p.DEUDA)+'</div></div></div></div>';
+    const deuda=parseFloat(String(p.DEUDA).replace(/\./g,'').replace(',','.'))||0;
+    return '<div class="pac-card" onclick="abrirUsuario(\''+((p.IDPAC||p.USUARIO).replace(/'/g,"\\'"))+'\')">'+'<div class="pac-card-header"><div><div class="pac-name">'+p.USUARIO+'</div><div class="pac-meta">Últ. sesión: '+fmtFecha(p.ULTACT)+' · Hon: $'+fmt(p.HONORARIO)+'</div></div><div class="pac-deuda"><div class="deuda-label">Deuda</div><div class="deuda-amount'+(deuda===0?' zero':'')+'">$'+fmt(p.DEUDA)+'</div></div></div></div>';
   }).join('');
   document.getElementById('list-usuarios').innerHTML=html;
 }
@@ -223,7 +239,7 @@ function renderTodas(q){
     return;
   }
   const html=lista.map(s=>{
-    const saldo=parseFloat(String(s.SALDO).replace(/\\./g,'').replace(',','.'))||0;
+    const saldo=parseFloat(String(s.SALDO).replace(/\./g,'').replace(',','.'))||0;
     const obs=s.OBS?'<div class="ses-obs">📝 '+s.OBS+'</div>':'';
     return '<div class="ses-card"><div class="ses-row"><div class="ses-pac">'+s.USUARIO+'</div><div><div class="ses-label">Fecha</div><div class="ses-val">'+fmtFecha(s.FECHA)+'</div><div class="ses-label">'+s.DIA+'</div></div><div><div class="ses-label">Importe</div><div class="ses-val">$'+fmt(s.IMPORTE)+'</div></div><div><div class="ses-label">Saldo</div><div class="ses-val'+(saldo>0?' ses-saldo-neg':'')+'">$'+fmt(s.SALDO)+'</div></div>'+obs+'</div></div>';
   }).join('');
@@ -233,7 +249,7 @@ function renderTodas(q){
 function abrirUsuario(key){
   const p=datos.usuarios.find(x=>(x.IDPAC||x.USUARIO)===key);
   if(!p) return;
-  const deuda=parseFloat(String(p.DEUDA).replace(/\\./g,'').replace(',','.'))||0;
+  const deuda=parseFloat(String(p.DEUDA).replace(/\./g,'').replace(',','.'))||0;
   const sesiones=datos.todas.filter(s=>(s.IDPAC||s.USUARIO)===key);
   const pendientes=datos.concilio.filter(s=>(s.IDPAC||s.USUARIO)===key);
   const waLink=p.TELEFONO?'<a href="tel:'+p.TELEFONO+'" style="color:var(--accent);font-weight:600;">'+p.TELEFONO+'</a>':'Sin teléfono';
