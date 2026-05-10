@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SesWeb</title>
+<title>Clases de Inglés</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
   :root{--bg:#f5f2ee;--surface:#fff;--surface2:#f0ece6;--border:#e0d9d0;--text:#1a1714;--text2:#6b6560;--accent:#2d6a4f;--accent-light:#e8f3ee;--accent2:#c8533a;--accent2-light:#fdf0ed;--shadow:0 2px 12px rgba(0,0,0,0.08);--radius:14px;}
@@ -72,11 +72,47 @@
   .filter-pac span{background:var(--accent-light);color:var(--accent);padding:3px 10px;border-radius:50px;font-weight:600;}
   .filter-pac button{background:none;border:none;color:var(--accent2);font-size:13px;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif;}
   .count-badge{display:inline-block;background:var(--surface2);color:var(--text2);border-radius:50px;font-size:11px;padding:2px 8px;margin-left:6px;font-weight:500;}
+  .lock-overlay{position:fixed;inset:0;background:var(--accent);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;}
+  .lock-overlay.oculto{display:none;}
+  .lock-title{font-family:'DM Serif Display',serif;font-size:28px;color:white;}
+  .lock-subtitle{font-size:14px;color:rgba(255,255,255,0.7);margin-top:-16px;}
+  .lock-dots{display:flex;gap:16px;}
+  .lock-dot{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.3);transition:background 0.15s;}
+  .lock-dot.lleno{background:white;}
+  .lock-teclado{display:grid;grid-template-columns:repeat(3,72px);gap:12px;}
+  .lock-btn{width:72px;height:72px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-family:'DM Sans',sans-serif;font-size:24px;font-weight:500;cursor:pointer;transition:background 0.15s;}
+  .lock-btn:active{background:rgba(255,255,255,0.35);}
+  .lock-error{font-size:13px;color:rgba(255,255,255,0.85);height:20px;}
 </style>
 </head>
 <body>
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-title">🇬🇧🇺🇸</div>
+  <div class="lock-subtitle">Ingresá tu clave</div>
+  <div class="lock-dots" id="lockDots">
+    <div class="lock-dot" id="d0"></div>
+    <div class="lock-dot" id="d1"></div>
+    <div class="lock-dot" id="d2"></div>
+    <div class="lock-dot" id="d3"></div>
+  </div>
+  <div class="lock-teclado">
+    <button class="lock-btn" onclick="pinTecla('1')">1</button>
+    <button class="lock-btn" onclick="pinTecla('2')">2</button>
+    <button class="lock-btn" onclick="pinTecla('3')">3</button>
+    <button class="lock-btn" onclick="pinTecla('4')">4</button>
+    <button class="lock-btn" onclick="pinTecla('5')">5</button>
+    <button class="lock-btn" onclick="pinTecla('6')">6</button>
+    <button class="lock-btn" onclick="pinTecla('7')">7</button>
+    <button class="lock-btn" onclick="pinTecla('8')">8</button>
+    <button class="lock-btn" onclick="pinTecla('9')">9</button>
+    <button class="lock-btn" onclick="pinBorrar()">⌫</button>
+    <button class="lock-btn" onclick="pinTecla('0')">0</button>
+    <button class="lock-btn" style="background:transparent;"></button>
+  </div>
+  <div class="lock-error" id="lockError"></div>
+</div>
 <div class="header">
-  <h1>SesWeb 🗂️</h1>
+  <h1>Clases de Inglés 🇬🇧🇺🇸</h1>
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="Buscar usuario..." oninput="filtrar()">
@@ -107,9 +143,43 @@
 const SHEET_ID='1MzqVv_6UZzcHIUuIj4PUVBS1NC9wMKCfF2lGKhyvB94';
 const API_KEY='AIzaSyAbXfah4gRFV7OoCi3kEN6j2f0oUxzOBwE';
 const HOJAS={concilio:'Concilio',usuarios:'Usuarios',todas:'Todas'};
+const PIN_CORRECTO='4860';
 let datos={concilio:[],usuarios:[],todas:[]};
 let tabActual='concilio';
 let filtroUsuario=null;
+let pinActual='';
+
+function pinTecla(n){
+  if(pinActual.length>=4) return;
+  pinActual+=n;
+  actualizarDots();
+  if(pinActual.length===4){
+    if(pinActual===PIN_CORRECTO){
+      document.getElementById('lockOverlay').classList.add('oculto');
+      cargarDatos();
+    } else {
+      document.getElementById('lockError').textContent='Clave incorrecta';
+      setTimeout(()=>{
+        pinActual='';
+        actualizarDots();
+        document.getElementById('lockError').textContent='';
+      },800);
+    }
+  }
+}
+
+function pinBorrar(){
+  if(pinActual.length>0){
+    pinActual=pinActual.slice(0,-1);
+    actualizarDots();
+  }
+}
+
+function actualizarDots(){
+  for(let i=0;i<4;i++){
+    document.getElementById('d'+i).className='lock-dot'+(i<pinActual.length?' lleno':'');
+  }
+}
 
 async function leerHoja(nombre){
   const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(nombre)+'?key='+API_KEY;
@@ -263,7 +333,6 @@ function cerrarModal(e){if(e&&e.target!==document.getElementById('modalOverlay')
 function cambiarTab(nombre,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.list').forEach(l=>l.classList.remove('active'));document.getElementById('list-'+nombre).classList.add('active');tabActual=nombre;}
 function cambiarTabDirecto(nombre){const tabs=document.querySelectorAll('.tab');const idx={concilio:0,usuarios:1,todas:2}[nombre];tabs.forEach(t=>t.classList.remove('active'));tabs[idx].classList.add('active');document.querySelectorAll('.list').forEach(l=>l.classList.remove('active'));document.getElementById('list-'+nombre).classList.add('active');tabActual=nombre;renderizar();}
 function filtrar(){renderizar();}
-cargarDatos();
 </script>
 </body>
 </html>
