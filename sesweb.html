@@ -115,7 +115,7 @@
   <h1>Clases de Inglés 🇬🇧🇺🇸</h1>
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="Buscar usuario..." oninput="filtrar()">
+    <input type="text" id="searchInput" placeholder="Buscar alumno..." oninput="filtrar()">
   </div>
 </div>
 <div class="sync-bar" id="syncBar">
@@ -125,7 +125,7 @@
 <div class="main">
   <div class="tabs">
     <button class="tab active" onclick="cambiarTab('concilio',this)">Concilio <span class="count-badge" id="cnt-concilio">—</span></button>
-    <button class="tab" onclick="cambiarTab('usuarios',this)">Usuarios <span class="count-badge" id="cnt-usuarios">—</span></button>
+    <button class="tab" onclick="cambiarTab('usuarios',this)">Alumnos <span class="count-badge" id="cnt-usuarios">—</span></button>
     <button class="tab" onclick="cambiarTab('todas',this)">Todas <span class="count-badge" id="cnt-todas">—</span></button>
   </div>
   <div class="list active" id="list-concilio"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
@@ -159,11 +159,7 @@ function pinTecla(n){
       cargarDatos();
     } else {
       document.getElementById('lockError').textContent='Clave incorrecta';
-      setTimeout(()=>{
-        pinActual='';
-        actualizarDots();
-        document.getElementById('lockError').textContent='';
-      },800);
+      setTimeout(()=>{ window.close(); location.href='about:blank'; },800);
     }
   }
 }
@@ -207,7 +203,7 @@ async function cargarDatos(){
     datos.concilio=c;
     datos.usuarios=u;
     datos.todas=t;
-    setSyncStatus('ok','Actualizado · '+c.length+' en concilio · '+u.length+' usuarios · '+t.length+' sesiones');
+    setSyncStatus('ok','Actualizado · '+c.length+' en concilio · '+u.length+' alumnos · '+t.length+' clases');
     renderizar();
   }catch(err){
     setSyncStatus('error','Error al cargar datos: '+err.message);
@@ -282,7 +278,7 @@ function renderUsuarios(q){
   const lista=datos.usuarios.filter(p=>!q||p.USUARIO.toLowerCase().includes(q));
   document.getElementById('cnt-usuarios').textContent=lista.length;
   if(!lista.length){
-    document.getElementById('list-usuarios').innerHTML='<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">'+(q?'Sin resultados':'Sin usuarios')+'</div></div>';
+    document.getElementById('list-usuarios').innerHTML='<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">'+(q?'Sin resultados':'Sin alumnos')+'</div></div>';
     return;
   }
   const html=lista.map(p=>{
@@ -305,7 +301,7 @@ function renderTodas(q){
     extra='<div class="filter-pac">Filtrando: <span>'+nombre+'</span> <button onclick="limpiarFiltro()">✕ Ver todas</button></div>';
   }
   if(!lista.length){
-    cont.innerHTML=extra+'<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">'+(q||filtroUsuario?'Sin resultados':'Sin sesiones')+'</div></div>';
+    cont.innerHTML=extra+'<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">'+(q||filtroUsuario?'Sin resultados':'Sin clases')+'</div></div>';
     return;
   }
   const html=lista.map(s=>{
@@ -323,7 +319,7 @@ function abrirUsuario(key){
   const sesiones=datos.todas.filter(s=>(s.IDPAC||s.USUARIO)===key);
   const pendientes=datos.concilio.filter(s=>(s.IDPAC||s.USUARIO)===key);
   const waLink=p.TELEFONO?'<a href="tel:'+p.TELEFONO+'" style="color:var(--accent);font-weight:600;">'+p.TELEFONO+'</a>':'Sin teléfono';
-  document.getElementById('modalContent').innerHTML='<div class="modal-title">'+p.USUARIO+'</div><div class="modal-subtitle">'+(p.NOMBRE?'Nombre: '+p.NOMBRE:'')+'</div><div class="info-grid"><div class="info-item"><div class="info-item-label">Honorario</div><div class="info-item-val">$'+fmt(p.HONORARIO)+'</div></div><div class="info-item"><div class="info-item-label">Deuda total</div><div class="info-item-val '+(deuda>0?'red':'green')+'">$'+fmt(p.DEUDA)+'</div></div><div class="info-item"><div class="info-item-label">Última sesión</div><div class="info-item-val">'+fmtFecha(p.ULTACT)+'</div></div><div class="info-item"><div class="info-item-label">Teléfono</div><div class="info-item-val" style="font-size:14px">'+waLink+'</div></div></div><div class="section-title">Sesiones ('+sesiones.length+')</div><button onclick="verSesionesUsuario(\''+key+'\')" style="width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--accent);background:var(--accent-light);color:var(--accent);font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;cursor:pointer;margin-bottom:12px;">Ver '+sesiones.length+' sesiones</button>'+(pendientes.length?'<div class="section-title">Pendientes ('+pendientes.length+')</div>'+pendientes.map(r=>'<div class="pend-row" style="background:var(--accent2-light);border-radius:8px;margin-bottom:6px;"><div>'+fmtFecha(r.FECHA)+' — '+r.DIA+'</div><div class="pend-saldo">$'+fmt(r.SALDO)+'</div></div>').join(''):'');
+  document.getElementById('modalContent').innerHTML='<div class="modal-title">'+p.USUARIO+'</div><div class="modal-subtitle">'+(p.NOMBRE?'Nombre: '+p.NOMBRE:'')+'</div><div class="info-grid"><div class="info-item"><div class="info-item-label">Honorario</div><div class="info-item-val">$'+fmt(p.HONORARIO)+'</div></div><div class="info-item"><div class="info-item-label">Deuda total</div><div class="info-item-val '+(deuda>0?'red':'green')+'">$'+fmt(p.DEUDA)+'</div></div><div class="info-item"><div class="info-item-label">Última clase</div><div class="info-item-val">'+fmtFecha(p.ULTACT)+'</div></div><div class="info-item"><div class="info-item-label">Teléfono</div><div class="info-item-val" style="font-size:14px">'+waLink+'</div></div></div><div class="section-title">Clases ('+sesiones.length+')</div><button onclick="verSesionesUsuario(\''+key+'\')" style="width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--accent);background:var(--accent-light);color:var(--accent);font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;cursor:pointer;margin-bottom:12px;">Ver '+sesiones.length+' clases</button>'+(pendientes.length?'<div class="section-title">Pendientes ('+pendientes.length+')</div>'+pendientes.map(r=>'<div class="pend-row" style="background:var(--accent2-light);border-radius:8px;margin-bottom:6px;"><div>'+fmtFecha(r.FECHA)+' — '+r.DIA+'</div><div class="pend-saldo">$'+fmt(r.SALDO)+'</div></div>').join(''):'');
   document.getElementById('modalOverlay').classList.add('open');
 }
 
