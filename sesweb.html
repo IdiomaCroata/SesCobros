@@ -104,8 +104,8 @@
   </div>
 </div>
 <script>
-const APPS_SCRIPT_URL='${scriptUrl}';
-const TOKEN='${token}';
+const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxs6qdJ1CA1aq8MGgemvgWlJMATYhhKThV21ZX30Q0zhUGtG1zgVTQCkUiRdu3cePqn/exec';
+const TOKEN='SesCobros2026TokenSeguro';
 let datos={concilio:[],usuarios:[],todas:[]};
 let tabActual='concilio';
 let filtroUsuario=null;
@@ -113,7 +113,7 @@ let filtroUsuario=null;
 async function cargarDatos(){
   setSyncStatus('loading','Cargando datos...');
   try{
-    const url=APPS_SCRIPT_URL+'?token='+encodeURIComponent(TOKEN);
+    const url=APPS_SCRIPT_URL+'?token='+TOKEN;
     const res=await fetch(url);
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json=await res.json();
@@ -250,4 +250,4 @@ function filtrar(){renderizar();}
 cargarDatos();
 </script>
 </body>
-</html>`
+</html>
