@@ -321,6 +321,19 @@ function abrirAlumno(key){
     html+='<div class="section-title">Mensaje para enviar</div>';
     html+='<div class="msg-box" id="msgBox">'+mensaje.replace(/\n/g,'<br>')+'</div>';
     html+='<button class="copy-btn" id="copyBtn" onclick="copiarMensaje(\''+encodeURIComponent(mensaje)+'\')">📋 Copiar mensaje</button>';
+
+    // Mensaje + 1 clase de hoy
+    const hoy=new Date();
+    const dd=String(hoy.getDate()).padStart(2,'0');
+    const mm=String(hoy.getMonth()+1).padStart(2,'0');
+    const aa=String(hoy.getFullYear()).slice(2);
+    const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const diaHoy=dias[hoy.getDay()];
+    const honorario=p?p.HONORARIO:'0';
+    const totalMas=total+(parseFloat(String(honorario).replace(/\./g,'').replace(',','.'))||0);
+    const detalleMas=detalle+'\n• '+diaHoy+' '+dd+'/'+mm+'/'+aa+': $'+fmt(honorario);
+    const mensajeMas='Hola '+nombre+'. Te envío el detalle de lo pendiente:\n\n'+detalleMas+'\n\nTotal: $'+fmt(totalMas)+'\n\nSaludos.';
+    html+='<button class="copy-btn" id="copyBtnMas" style="background:var(--accent2);margin-top:6px" onclick="copiarMensajeMas(\''+encodeURIComponent(mensajeMas)+'\')">📋 Copiar mensaje + clase de hoy</button>';
   } else {
     html+='<div class="empty" style="padding:24px 0"><div class="empty-icon">✅</div><div style="font-size:14px;color:var(--text2)">Sin clases pendientes</div></div>';
   }
@@ -329,6 +342,22 @@ function abrirAlumno(key){
 
   document.getElementById('modalContent').innerHTML=html;
   document.getElementById('modalOverlay').classList.add('open');
+}
+
+function copiarMensajeMas(encoded){
+  const texto=decodeURIComponent(encoded);
+  navigator.clipboard.writeText(texto).then(()=>{
+    const btn=document.getElementById('copyBtnMas');
+    btn.textContent='✓ Copiado';
+    setTimeout(()=>{ btn.textContent='📋 Copiar mensaje + clase de hoy'; },2000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=texto;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    const btn=document.getElementById('copyBtnMas');
+    btn.textContent='✓ Copiado';
+    setTimeout(()=>{ btn.textContent='📋 Copiar mensaje + clase de hoy'; },2000);
+  });
 }
 
 function copiarMensaje(encoded){
