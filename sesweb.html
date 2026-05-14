@@ -312,6 +312,12 @@ function abrirAlumno(key){
   const total=pendientes.reduce((s,r)=>s+(parseFloat(String(r.SALDO).replace(/\./g,'').replace(',','.'))||0),0);
 
   let html='<div class="modal-title">'+usuario+'</div>';
+  const honorario=p?p.HONORARIO:'';
+  const ultact=p?fmtFecha(p.ULTACT):'';
+  html+='<div style="display:flex;gap:16px;margin-bottom:16px;">';
+  if(honorario) html+='<div style="background:var(--surface2);border-radius:10px;padding:8px 14px;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Honorario</div><div style="font-weight:600;font-size:15px">$'+fmt(honorario)+'</div></div>';
+  if(ultact) html+='<div style="background:var(--surface2);border-radius:10px;padding:8px 14px;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Última clase</div><div style="font-weight:600;font-size:15px">'+ultact+'</div></div>';
+  html+='</div>';
 
   if(pendientes.length){
     // Armar el texto del mensaje
