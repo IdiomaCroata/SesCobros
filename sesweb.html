@@ -192,7 +192,7 @@ function actualizarDots(){
 
 // ── DATOS ────────────────────────────────────
 async function leerHoja(nombre){
-  const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(nombre)+'?key='+API_KEY;
+  const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(nombre)+'?key='+API_KEY+'&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING';
   const res=await fetch(url);
   if(!res.ok) throw new Error('Error leyendo '+nombre+': '+res.status);
   const json=await res.json();
@@ -229,8 +229,9 @@ function fmtFecha(val){
   return String(val).trim();
 }
 function fmt(n){
-  const num=parseFloat(String(n).replace(/\./g,'').replace(',','.'));
-  return isNaN(num)?n:num.toLocaleString('es-AR');
+  // With UNFORMATTED_VALUE, numbers come as plain integers or floats
+  const num=parseFloat(String(n).replace(',','.'));
+  return isNaN(num)?n:Math.round(num).toLocaleString('es-AR');
 }
 
 // ── RENDER ───────────────────────────────────
@@ -252,7 +253,7 @@ function renderAlumnos(q){
     return;
   }
   document.getElementById('list-alumnos').innerHTML=lista.map(p=>{
-    const deuda=parseFloat(String(p.DEUDA).replace(/\./g,'').replace(',','.'))||0;
+    const deuda=parseFloat(String(p.DEUDA).replace(',','.'))||0;
     const key=(p.IDPAC||p.USUARIO).replace(/'/g,"\\'");
     return '<div class="alu-card" onclick="abrirAlumno(\''+key+'\')"><div class="alu-card-inner"><div class="alu-nombre">'+p.USUARIO+'</div><div style="display:flex;align-items:center;gap:8px"><div class="alu-indicador '+(deuda>0?'tiene':'sin')+'"></div><div style="color:var(--text2);font-size:20px">›</div></div></div></div>';
   }).join('');
@@ -265,7 +266,7 @@ function renderConcilio(q){
     const key=r.IDPAC||r.USUARIO;
     if(!grupos[key]) grupos[key]={nombre:r.USUARIO,idpac:r.IDPAC,rows:[],total:0};
     grupos[key].rows.push(r);
-    grupos[key].total+=parseFloat(String(r.SALDO).replace(/\./g,'').replace(',','.'))||0;
+    grupos[key].total+=parseFloat(String(r.SALDO).replace(',','.'))||0;
   });
   const lista=Object.values(grupos).filter(g=>!q||g.nombre.toLowerCase().includes(q));
   document.getElementById('cnt-concilio').textContent=lista.length;
@@ -296,7 +297,7 @@ function renderTodas(q){
     return;
   }
   cont.innerHTML=extra+lista.map(s=>{
-    const saldo=parseFloat(String(s.SALDO).replace(/\./g,'').replace(',','.'))||0;
+    const saldo=parseFloat(String(s.SALDO).replace(',','.'))||0;
     const obs=s.OBS?'<div class="ses-obs">📝 '+s.OBS+'</div>':'';
     return '<div class="ses-card"><div class="ses-row"><div class="ses-pac">'+s.USUARIO+'</div><div><div class="ses-label">Fecha</div><div class="ses-val">'+fmtFecha(s.FECHA)+'</div><div class="ses-label">'+s.DIA+'</div></div><div><div class="ses-label">Importe</div><div class="ses-val">$'+fmt(s.IMPORTE)+'</div></div><div><div class="ses-label">Saldo</div><div class="ses-val'+(saldo>0?' ses-saldo-neg':'')+'">$'+fmt(s.SALDO)+'</div></div>'+obs+'</div></div>';
   }).join('');
@@ -309,7 +310,7 @@ function abrirAlumno(key){
   const clases=datos.todas.filter(s=>(s.IDPAC||s.USUARIO)===key);
   const nombre=p?p.NOMBRE:(pendientes[0]?pendientes[0].USUARIO.split(' ')[0]:key);
   const usuario=p?p.USUARIO:key;
-  const total=pendientes.reduce((s,r)=>s+(parseFloat(String(r.SALDO).replace(/\./g,'').replace(',','.'))||0),0);
+  const total=pendientes.reduce((s,r)=>s+(parseFloat(String(r.SALDO).replace(',','.'))||0),0);
 
   let html='<div class="modal-title">'+usuario+'</div>';
   const honorario=p?p.HONORARIO:'';
@@ -336,7 +337,7 @@ function abrirAlumno(key){
     const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
     const diaHoy=dias[hoy.getDay()];
     const honorario=p?p.HONORARIO:'0';
-    const totalMas=total+(parseFloat(String(honorario).replace(/\./g,'').replace(',','.'))||0);
+    const totalMas=total+(parseFloat(String(honorario).replace(',','.'))||0);
     const detalleMas=detalle+'\n• '+diaHoy+' '+dd+'/'+mm+'/'+aa+': $'+fmt(honorario);
     const mensajeMas='Hola '+nombre+'. Te envío el detalle de lo pendiente:\n\n'+detalleMas+'\n\nTotal: $'+fmt(totalMas)+'\n\nSaludos.';
     html+='<button class="copy-btn" id="copyBtnMas" style="background:var(--accent2);margin-top:6px" onclick="copiarMensajeMas(\''+encodeURIComponent(mensajeMas)+'\')">📋 Copiar mensaje + clase de hoy</button>';
