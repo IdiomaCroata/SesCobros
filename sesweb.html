@@ -253,9 +253,9 @@ function renderAlumnos(q){
     return;
   }
   document.getElementById('list-alumnos').innerHTML=lista.map(p=>{
-    const deuda=parseFloat(String(p.DEUDA).replace(',','.'))||0;
     const key=(p.IDPAC||p.USUARIO).replace(/'/g,"\\'");
-    return '<div class="alu-card" onclick="abrirAlumno(\''+key+'\')"><div class="alu-card-inner"><div class="alu-nombre">'+p.USUARIO+'</div><div style="display:flex;align-items:center;gap:8px"><div class="alu-indicador '+(deuda>0?'tiene':'sin')+'"></div><div style="color:var(--text2);font-size:20px">›</div></div></div></div>';
+    const tienePendiente=datos.concilio.some(r=>(r.IDPAC||r.USUARIO)===(p.IDPAC||p.USUARIO));
+    return '<div class="alu-card" onclick="abrirAlumno(\''+key+'\')"><div class="alu-card-inner"><div class="alu-nombre">'+p.USUARIO+'</div><div style="display:flex;align-items:center;gap:8px"><div class="alu-indicador '+(tienePendiente?'tiene':'sin')+'"></div><div style="color:var(--text2);font-size:20px">›</div></div></div></div>';
   }).join('');
 }
 
@@ -317,7 +317,7 @@ function abrirAlumno(key){
   const ultact=p?fmtFecha(p.ULTACT):'';
   html+='<div style="display:flex;gap:16px;margin-bottom:16px;">';
   if(honorario) html+='<div style="background:var(--surface2);border-radius:10px;padding:8px 14px;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Honorario</div><div style="font-weight:600;font-size:15px">$'+fmt(honorario)+'</div></div>';
-  if(ultact) html+='<div style="background:var(--surface2);border-radius:10px;padding:8px 14px;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Última clase</div><div style="font-weight:600;font-size:15px">'+ultact+'</div></div>';
+  if(ultact) html+='<div style="background:var(--surface2);border-radius:10px;padding:8px 14px;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Última actualización</div><div style="font-weight:600;font-size:15px">'+ultact+'</div></div>';
   html+='</div>';
 
   if(pendientes.length){
