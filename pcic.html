@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Clases de Idioma Croata</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root{--bg:#f5f2ee;--surface:#fff;--surface2:#f0ece6;--border:#e0d9d0;--text:#1a1714;--text2:#6b6560;--accent:#2d6a4f;--accent-light:#e8f3ee;--accent2:#c8533a;--accent2-light:#fdf0ed;--shadow:0 2px 12px rgba(0,0,0,0.08);--radius:14px;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;}
+
+  /* LOCK */
+  .lock-overlay{position:fixed;inset:0;background:var(--accent);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;}
+  .lock-overlay.oculto{display:none;}
+  .lock-title{font-size:36px;}
+  .lock-subtitle{font-size:14px;color:rgba(255,255,255,0.7);}
+  .lock-dots{display:flex;gap:16px;}
+  .lock-dot{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.3);transition:background 0.15s;}
+  .lock-dot.lleno{background:white;}
+  .lock-teclado{display:grid;grid-template-columns:repeat(3,72px);gap:12px;}
+  .lock-btn{width:72px;height:72px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:white;font-family:'DM Sans',sans-serif;font-size:24px;font-weight:500;cursor:pointer;}
+  .lock-btn:active{background:rgba(255,255,255,0.35);}
+  .lock-error{font-size:13px;color:rgba(255,255,255,0.85);height:20px;}
+
+  /* HEADER */
+  .header{background:var(--accent);color:white;padding:20px 20px 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+  .header h1{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:12px;}
+  .search-wrap{position:relative;}
+  .search-wrap input{width:100%;padding:10px 16px 10px 40px;border-radius:50px;border:none;background:rgba(255,255,255,0.18);color:white;font-family:'DM Sans',sans-serif;font-size:15px;outline:none;}
+  .search-wrap input::placeholder{color:rgba(255,255,255,0.65);}
+  .search-wrap input:focus{background:rgba(255,255,255,0.25);}
+  .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:0.75;font-size:16px;}
+
+  /* SYNC */
+  .sync-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 20px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px;}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+  .sync-dot.loading{background:#f0a500;animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--accent2);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  /* MAIN */
+  .main{padding:16px;}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .tab{flex:1;padding:9px 4px;border-radius:50px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;text-align:center;}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:white;}
+  .list{display:none;}.list.active{display:block;}
+  .count-badge{display:inline-block;background:var(--surface2);color:var(--text2);border-radius:50px;font-size:11px;padding:2px 8px;margin-left:6px;font-weight:500;}
+  .tab.active .count-badge{background:rgba(255,255,255,0.25);color:white;}
+
+  /* ALUMNO CARD */
+  .alu-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:transform 0.15s;}
+  .alu-card:active{transform:scale(0.985);}
+  .alu-card-inner{padding:16px 18px;display:flex;align-items:center;justify-content:space-between;}
+  .alu-nombre{font-weight:600;font-size:15px;}
+  .alu-indicador{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-right:10px;}
+  .alu-indicador.tiene{background:var(--accent2);}
+  .alu-indicador.sin{background:var(--accent);}
+
+  /* PENDIENTE */
+  .pend-row{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--surface2);font-size:14px;background:var(--surface2);border-radius:8px;margin-bottom:6px;}
+  .pend-dia{color:var(--text2);font-size:12px;}
+  .pend-saldo{font-weight:600;}
+
+  /* SESIONES */
+  .ses-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
+  .ses-row{padding:12px 16px;border-bottom:1px solid var(--surface2);display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:13px;}
+  .ses-row:last-child{border-bottom:none;}
+  .ses-pac{grid-column:1/-1;font-weight:600;font-size:14px;margin-bottom:4px;}
+  .ses-label{font-size:11px;color:var(--text2);}
+  .ses-val{font-weight:500;}
+  .ses-saldo-neg{color:var(--accent2);font-weight:600;}
+  .ses-obs{grid-column:1/-1;font-size:12px;color:var(--text2);font-style:italic;margin-top:4px;}
+
+  /* EMPTY */
+  .empty{text-align:center;padding:48px 20px;color:var(--text2);}
+  .empty-icon{font-size:36px;margin-bottom:12px;}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:flex-end;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:20px;animation:slideUp 0.25s ease;}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:16px;}
+  .modal-close{position:absolute;right:20px;top:20px;background:var(--surface2);border:none;border-radius:50%;width:32px;height:32px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);}
+  .section-title{font-weight:600;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:16px;}
+
+  /* MENSAJE PARA COPIAR */
+  .msg-box{background:var(--surface2);border-radius:12px;padding:16px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;border:1px solid var(--border);margin-bottom:12px;}
+  .copy-btn{width:100%;padding:12px;border-radius:50px;border:none;background:var(--accent);color:white;font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;cursor:pointer;margin-bottom:8px;}
+  .copy-btn.copiado{background:#555;}
+  .ver-historial-btn{width:100%;padding:10px;border-radius:50px;border:1.5px solid var(--accent);background:var(--accent-light);color:var(--accent);font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;margin-top:4px;}
+
+  /* FILTRO */
+  .filter-bar{font-size:13px;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+  .filter-bar span{background:var(--accent-light);color:var(--accent);padding:3px 10px;border-radius:50px;font-weight:600;}
+  .filter-bar button{background:none;border:none;color:var(--accent2);font-size:13px;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif;}
+</style>
+</head>
+<body>
+
+<!-- PANTALLA DE CLAVE -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-title">🇭🇷</div>
+  <div style="font-family:'DM Serif Display',serif;font-size:20px;color:white;margin-top:-8px;">Clases de Idioma Croata</div>
+  <div class="lock-subtitle">Ingresá tu clave</div>
+  <div class="lock-dots">
+    <div class="lock-dot" id="d0"></div>
+    <div class="lock-dot" id="d1"></div>
+    <div class="lock-dot" id="d2"></div>
+    <div class="lock-dot" id="d3"></div>
+  </div>
+  <div class="lock-teclado">
+    <button class="lock-btn" onclick="pinTecla('1')">1</button>
+    <button class="lock-btn" onclick="pinTecla('2')">2</button>
+    <button class="lock-btn" onclick="pinTecla('3')">3</button>
+    <button class="lock-btn" onclick="pinTecla('4')">4</button>
+    <button class="lock-btn" onclick="pinTecla('5')">5</button>
+    <button class="lock-btn" onclick="pinTecla('6')">6</button>
+    <button class="lock-btn" onclick="pinTecla('7')">7</button>
+    <button class="lock-btn" onclick="pinTecla('8')">8</button>
+    <button class="lock-btn" onclick="pinTecla('9')">9</button>
+    <button class="lock-btn" onclick="pinBorrar()">⌫</button>
+    <button class="lock-btn" onclick="pinTecla('0')">0</button>
+    <button class="lock-btn" style="background:transparent;"></button>
+  </div>
+  <div class="lock-error" id="lockError"></div>
+</div>
+
+<!-- APP -->
+<div class="header">
+  <h1>Clases de Idioma Croata 🇭🇷</h1>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Buscar alumno..." oninput="filtrar()">
+  </div>
+</div>
+<div class="sync-bar" id="syncBar">
+  <div class="sync-dot loading" id="syncDot"></div>
+  <span id="syncMsg">Cargando datos...</span>
+</div>
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="cambiarTab('alumnos',this)">Alumnos <span class="count-badge" id="cnt-alumnos">—</span></button>
+    <button class="tab" onclick="cambiarTab('concilio',this)">Concilio <span class="count-badge" id="cnt-concilio">—</span></button>
+    <button class="tab" onclick="cambiarTab('todas',this)">Todas <span class="count-badge" id="cnt-todas">—</span></button>
+  </div>
+  <div class="list active" id="list-alumnos"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
+  <div class="list" id="list-concilio"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
+  <div class="list" id="list-todas"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="cerrarModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="cerrarModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+const SHEET_ID='16nW-FjImbLavD6Tg00K8AdYp0G4hvicrq0DgSK69CR8';
+const API_KEY='AIzaSyAbXfah4gRFV7OoCi3kEN6j2f0oUxzOBwE';
+const PIN_CORRECTO='4860';
+let datos={alumnos:[],concilio:[],todas:[]};
+let tabActual='alumnos';
+let filtroAlumno=null;
+let pinActual='';
+
+// ── PIN ──────────────────────────────────────
+function pinTecla(n){
+  if(pinActual.length>=4) return;
+  pinActual+=n;
+  actualizarDots();
+  if(pinActual.length===4){
+    if(pinActual===PIN_CORRECTO){
+      document.getElementById('lockOverlay').classList.add('oculto');
+      cargarDatos();
+    } else {
+      document.getElementById('lockError').textContent='Clave incorrecta';
+      setTimeout(()=>{ location.href='about:blank'; },800);
+    }
+  }
+}
+function pinBorrar(){
+  if(pinActual.length>0){ pinActual=pinActual.slice(0,-1); actualizarDots(); }
+}
+function actualizarDots(){
+  for(let i=0;i<4;i++) document.getElementById('d'+i).className='lock-dot'+(i<pinActual.length?' lleno':'');
+}
+
+// ── DATOS ────────────────────────────────────
+async function leerHoja(nombre){
+  const url='https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+encodeURIComponent(nombre)+'?key='+API_KEY+'&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING';
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('Error leyendo '+nombre+': '+res.status);
+  const json=await res.json();
+  const rows=json.values||[];
+  if(rows.length<2) return [];
+  const h=rows[0];
+  return rows.slice(1).map(row=>{ const o={}; h.forEach((k,i)=>o[k]=row[i]||''); return o; });
+}
+
+async function cargarDatos(){
+  setSyncStatus('loading','Cargando datos...');
+  try{
+    const [a,c,t]=await Promise.all([leerHoja('Usuarios'),leerHoja('Concilio'),leerHoja('Todas')]);
+    datos.alumnos=a;
+    datos.concilio=c;
+    datos.todas=t;
+    setSyncStatus('ok','Actualizado · '+a.length+' alumnos · '+c.length+' en concilio · '+t.length+' clases');
+    renderizar();
+  }catch(err){
+    setSyncStatus('error','Error: '+err.message);
+  }
+}
+
+function setSyncStatus(tipo,msg){
+  document.getElementById('syncDot').className='sync-dot'+(tipo==='loading'?' loading':tipo==='error'?' error':'');
+  document.getElementById('syncMsg').textContent=msg;
+}
+
+// ── FORMATO ──────────────────────────────────
+function fmtFecha(val){
+  if(!val) return '';
+  const m=String(val).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(m) return m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+(m[3].length===4?m[3].slice(2):m[3]);
+  return String(val).trim();
+}
+function fmt(n){
+  // With UNFORMATTED_VALUE, numbers come as plain integers or floats
+  const num=parseFloat(String(n).replace(',','.'));
+  return isNaN(num)?n:Math.round(num).toLocaleString('es-AR');
+}
+
+// ── RENDER ───────────────────────────────────
+function renderizar(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  renderAlumnos(q);
+  renderConcilio(q);
+  renderTodas(q);
+}
+
+// ALUMNOS — solo nombre + punto indicador de deuda
+function renderAlumnos(q){
+  const lista=[...datos.alumnos]
+    .filter(p=>!q||p.USUARIO.toLowerCase().includes(q))
+    .sort((a,b)=>a.USUARIO.localeCompare(b.USUARIO,'es',{sensitivity:'base'}));
+  document.getElementById('cnt-alumnos').textContent=lista.length;
+  if(!lista.length){
+    document.getElementById('list-alumnos').innerHTML='<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">'+(q?'Sin resultados':'Sin alumnos')+'</div></div>';
+    return;
+  }
+  document.getElementById('list-alumnos').innerHTML=lista.map(p=>{
+    const key=(p.IDPAC||p.USUARIO).replace(/'/g,"\\'");
+    const tienePendiente=datos.concilio.some(r=>(r.IDPAC||r.USUARIO)===(p.IDPAC||p.USUARIO));
+    return '<div class="alu-card" onclick="abrirAlumno(\''+key+'\')"><div class="alu-card-inner"><div class="alu-nombre">'+p.USUARIO+'</div><div style="display:flex;align-items:center;gap:8px"><div class="alu-indicador '+(tienePendiente?'tiene':'sin')+'"></div><div style="color:var(--text2);font-size:20px">›</div></div></div></div>';
+  }).join('');
+}
+
+// CONCILIO
+function renderConcilio(q){
+  const grupos={};
+  datos.concilio.forEach(r=>{
+    const key=r.IDPAC||r.USUARIO;
+    if(!grupos[key]) grupos[key]={nombre:r.USUARIO,idpac:r.IDPAC,rows:[],total:0};
+    grupos[key].rows.push(r);
+    grupos[key].total+=parseFloat(String(r.SALDO).replace(',','.'))||0;
+  });
+  const lista=Object.values(grupos).filter(g=>!q||g.nombre.toLowerCase().includes(q));
+  document.getElementById('cnt-concilio').textContent=lista.length;
+  if(!lista.length){
+    document.getElementById('list-concilio').innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">'+(q?'Sin resultados':'Sin deudas pendientes')+'</div></div>';
+    return;
+  }
+  document.getElementById('list-concilio').innerHTML=lista.map(g=>{
+    const filas=g.rows.map(r=>'<div class="pend-row"><div><div>'+fmtFecha(r.FECHA)+'</div><div class="pend-dia">'+r.DIA+'</div></div><div class="pend-saldo">$'+fmt(r.SALDO)+'</div></div>').join('');
+    return '<div style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)"><div style="background:var(--accent-light);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)"><div style="font-weight:600;font-size:14px;color:var(--accent)">'+g.nombre+'</div><div style="font-weight:700;font-size:15px;color:var(--accent2)">$'+fmt(g.total)+'</div></div>'+filas+'<div style="padding:8px 16px 12px"><button onclick="abrirAlumno(\''+g.idpac+'\')" style="width:100%;padding:9px;border-radius:50px;border:1.5px solid var(--accent);background:var(--accent-light);color:var(--accent);font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:13px;cursor:pointer;">Ver mensaje y detalle</button></div></div>';
+  }).join('');
+}
+
+// TODAS
+function renderTodas(q){
+  let lista=datos.todas;
+  if(filtroAlumno) lista=lista.filter(s=>(s.IDPAC||s.USUARIO)===filtroAlumno);
+  if(q) lista=lista.filter(s=>s.USUARIO.toLowerCase().includes(q));
+  document.getElementById('cnt-todas').textContent=lista.length;
+  const cont=document.getElementById('list-todas');
+  let extra='';
+  if(filtroAlumno){
+    const usu=datos.alumnos.find(p=>(p.IDPAC||p.USUARIO)===filtroAlumno);
+    extra='<div class="filter-bar">Filtrando: <span>'+(usu?usu.USUARIO:filtroAlumno)+'</span> <button onclick="limpiarFiltro()">✕ Ver todas</button></div>';
+  }
+  if(!lista.length){
+    cont.innerHTML=extra+'<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">'+(q||filtroAlumno?'Sin resultados':'Sin clases')+'</div></div>';
+    return;
+  }
+  cont.innerHTML=extra+lista.map(s=>{
+    const saldo=parseFloat(String(s.SALDO).replace(',','.'))||0;
+    const obs=s.OBS?'<div class="ses-obs">📝 '+s.OBS+'</div>':'';
+    return '<div class="ses-card"><div class="ses-row"><div class="ses-pac">'+s.USUARIO+'</div><div><div class="ses-label">Fecha</div><div class="ses-val">'+fmtFecha(s.FECHA)+'</div><div class="ses-label">'+s.DIA+'</div></div><div><div class="ses-label">Importe</div><div class="ses-val">$'+fmt(s.IMPORTE)+'</div></div><div><div class="ses-label">Saldo</div><div class="ses-val'+(saldo>0?' ses-saldo-neg':'')+'">$'+fmt(s.SALDO)+'</div></div>'+obs+'</div></div>';
+  }).join('');
+}
+
+// ── MODAL ALUMNO ─────────────────────────────
+function abrirAlumno(key){
+  const p=datos.alumnos.find(x=>(x.IDPAC||x.USUARIO)===key);
+  const pendientes=datos.concilio.filter(s=>(s.IDPAC||s.USUARIO)===key);
+  const clases=datos.todas.filter(s=>(s.IDPAC||s.USUARIO)===key);
+  const nombre=p?p.NOMBRE:(pendientes[0]?pendientes[0].USUARIO.split(' ')[0]:key);
+  const usuario=p?p.USUARIO:key;
+  const total=pendientes.reduce((s,r)=>s+(parseFloat(String(r.SALDO).replace(',','.'))||0),0);
+
+  let html='<div class="modal-title">'+usuario+'</div>';
+  const honorario=p?p.HONORARIO:'';
+  const ultact=p?fmtFecha(p.ULTACT):'';
+  html+='<div style="display:flex;gap:16px;margin-bottom:16px;">';
+  if(honorario) html+='<div style="background:var(--surface2);border-radius:10px;padding:8px 14px;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Honorario</div><div style="font-weight:600;font-size:15px">$'+fmt(honorario)+'</div></div>';
+  if(ultact) html+='<div style="background:var(--surface2);border-radius:10px;padding:8px 14px;"><div style="font-size:11px;color:var(--text2);margin-bottom:2px">Última actualización</div><div style="font-weight:600;font-size:15px">'+ultact+'</div></div>';
+  html+='</div>';
+
+  if(pendientes.length){
+    // Armar el texto del mensaje
+    const detalle=pendientes.map(r=>'• '+r.DIA+' '+fmtFecha(r.FECHA)+': $'+fmt(r.SALDO)).join('\n');
+    const mensaje='Hola '+nombre+'. Te envío el detalle de lo pendiente:\n\n'+detalle+'\n\nTotal: $'+fmt(total)+'\n\nSaludos.';
+
+    html+='<div class="section-title">Mensaje para enviar</div>';
+    html+='<div class="msg-box" id="msgBox">'+mensaje.replace(/\n/g,'<br>')+'</div>';
+    html+='<button class="copy-btn" id="copyBtn" onclick="copiarMensaje(\''+encodeURIComponent(mensaje)+'\')">📋 Copiar mensaje</button>';
+
+    // Mensaje + 1 clase de hoy
+    const hoy=new Date();
+    const dd=String(hoy.getDate()).padStart(2,'0');
+    const mm=String(hoy.getMonth()+1).padStart(2,'0');
+    const aa=String(hoy.getFullYear()).slice(2);
+    const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const diaHoy=dias[hoy.getDay()];
+    const honorario=p?p.HONORARIO:'0';
+    const totalMas=total+(parseFloat(String(honorario).replace(',','.'))||0);
+    const detalleMas=detalle+'\n• '+diaHoy+' '+dd+'/'+mm+'/'+aa+': $'+fmt(honorario);
+    const mensajeMas='Hola '+nombre+'. Te envío el detalle de lo pendiente:\n\n'+detalleMas+'\n\nTotal: $'+fmt(totalMas)+'\n\nSaludos.';
+    html+='<button class="copy-btn" id="copyBtnMas" style="background:var(--accent2);margin-top:6px" onclick="copiarMensajeMas(\''+encodeURIComponent(mensajeMas)+'\')">📋 Copiar mensaje + clase de hoy</button>';
+  } else {
+    html+='<div class="empty" style="padding:24px 0"><div class="empty-icon">✅</div><div style="font-size:14px;color:var(--text2)">Sin clases pendientes</div></div>';
+  }
+
+  html+='<button class="ver-historial-btn" onclick="verClasesAlumno(\''+key+'\')">Ver '+clases.length+' clases en historial</button>';
+
+  document.getElementById('modalContent').innerHTML=html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function copiarMensajeMas(encoded){
+  const texto=decodeURIComponent(encoded);
+  navigator.clipboard.writeText(texto).then(()=>{
+    const btn=document.getElementById('copyBtnMas');
+    btn.textContent='✓ Copiado';
+    setTimeout(()=>{ btn.textContent='📋 Copiar mensaje + clase de hoy'; },2000);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=texto;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    const btn=document.getElementById('copyBtnMas');
+    btn.textContent='✓ Copiado';
+    setTimeout(()=>{ btn.textContent='📋 Copiar mensaje + clase de hoy'; },2000);
+  });
+}
+
+function copiarMensaje(encoded){
+  const texto=decodeURIComponent(encoded);
+  navigator.clipboard.writeText(texto).then(()=>{
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='✓ Copiado';
+    btn.classList.add('copiado');
+    setTimeout(()=>{ btn.textContent='📋 Copiar mensaje'; btn.classList.remove('copiado'); },2000);
+  }).catch(()=>{
+    // Fallback para navegadores que no soportan clipboard
+    const ta=document.createElement('textarea');
+    ta.value=texto;
+    ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='✓ Copiado';
+    btn.classList.add('copiado');
+    setTimeout(()=>{ btn.textContent='📋 Copiar mensaje'; btn.classList.remove('copiado'); },2000);
+  });
+}
+
+function verClasesAlumno(key){ cerrarModal(); filtroAlumno=key; cambiarTabDirecto('todas'); }
+function limpiarFiltro(){ filtroAlumno=null; renderizar(); }
+function cerrarModal(e){
+  if(e&&e.target!==document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+function cambiarTab(nombre,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.list').forEach(l=>l.classList.remove('active'));
+  document.getElementById('list-'+nombre).classList.add('active');
+  tabActual=nombre;
+}
+function cambiarTabDirecto(nombre){
+  const idx={alumnos:0,concilio:1,todas:2}[nombre];
+  document.querySelectorAll('.tab').forEach((t,i)=>{ if(i===idx) t.classList.add('active'); else t.classList.remove('active'); });
+  document.querySelectorAll('.list').forEach(l=>l.classList.remove('active'));
+  document.getElementById('list-'+nombre).classList.add('active');
+  tabActual=nombre;
+  renderizar();
+}
+function filtrar(){ renderizar(); }
+</script>
+</body>
+</html>
