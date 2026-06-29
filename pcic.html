@@ -43,7 +43,7 @@
 
   /* MAIN */
   .main{padding:16px;}
-  .tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
   .tab{flex:1;padding:9px 4px;border-radius:50px;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;text-align:center;}
   .tab.active{background:var(--accent);border-color:var(--accent);color:white;}
   .list{display:none;}.list.active{display:block;}
@@ -147,11 +147,13 @@
     <button class="tab active" onclick="cambiarTab('alumnos',this)">Alumnos <span class="count-badge" id="cnt-alumnos">—</span></button>
     <button class="tab" onclick="cambiarTab('concilio',this)">Concilio <span class="count-badge" id="cnt-concilio">—</span></button>
     <button class="tab" onclick="cambiarTab('todas',this)">Todas <span class="count-badge" id="cnt-todas">—</span></button>
+    <button class="tab" onclick="cambiarTab('pagos',this)">Pagos <span class="count-badge" id="cnt-pagos">—</span></button>
     <button class="tab" onclick="cambiarTab('tablero',this)">Tablero</button>
   </div>
   <div class="list active" id="list-alumnos"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
   <div class="list" id="list-concilio"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
   <div class="list" id="list-todas"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
+  <div class="list" id="list-pagos"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
   <div class="list" id="list-tablero"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
 </div>
 
@@ -168,9 +170,10 @@
 const SHEET_ID='16nW-FjImbLavD6Tg00K8AdYp0G4hvicrq0DgSK69CR8';
 const API_KEY='AIzaSyAbXfah4gRFV7OoCi3kEN6j2f0oUxzOBwE';
 const PIN_CORRECTO='4860';
-let datos={alumnos:[],concilio:[],todas:[],tablero:[]};
+let datos={alumnos:[],concilio:[],todas:[],pagos:[],tablero:[]};
 let tabActual='alumnos';
 let filtroAlumno=null;
+let ultimaAct='';
 let pinActual='';
 
 // ── PIN ──────────────────────────────────────
@@ -210,14 +213,20 @@ async function leerHoja(nombre){
 async function cargarDatos(){
   setSyncStatus('loading','Cargando datos...');
   try{
-    const [a,c,t,tab]=await Promise.all([
+    const [a,c,t,pg,tab]=await Promise.all([
       leerHoja('Usuarios'),leerHoja('Concilio'),leerHoja('Todas'),
+      leerHoja('Pagos').catch(()=>[]),
       leerHoja('Tablero').catch(()=>[])]);
     datos.alumnos=a;
     datos.concilio=c;
     datos.todas=t;
+    datos.pagos=pg;
     datos.tablero=tab;
-    setSyncStatus('ok','Actualizado · '+a.length+' alumnos · '+c.length+' en concilio · '+t.length+' clases');
+    // Fecha/hora de la última actualización (fila meta del Tablero).
+    const meta=tab.find(r=>r.seccion==='meta'&&r.etiqueta==='actualizado');
+    ultimaAct=meta?meta.valor:'';
+    const cab=ultimaAct?('Actualizado el '+ultimaAct):'Actualizado';
+    setSyncStatus('ok',cab+' · '+a.length+' alumnos · '+c.length+' en concilio · '+pg.length+' pagos');
     renderizar();
   }catch(err){
     setSyncStatus('error','Error: '+err.message);
@@ -248,7 +257,29 @@ function renderizar(){
   renderAlumnos(q);
   renderConcilio(q);
   renderTodas(q);
+  renderPagos(q);
   renderTablero();
+}
+
+// PAGOS (últimos 3 meses: fecha · usuario webnom · importe)
+function renderPagos(q){
+  let lista=datos.pagos;
+  if(q) lista=lista.filter(p=>String(p.USUARIO||'').toLowerCase().includes(q));
+  document.getElementById('cnt-pagos').textContent=lista.length;
+  const cont=document.getElementById('list-pagos');
+  if(!lista.length){
+    cont.innerHTML='<div class="empty"><div class="empty-icon">💸</div><div class="empty-text">'+(q?'Sin resultados':'Sin pagos en los últimos 3 meses')+'</div></div>';
+    return;
+  }
+  const total=lista.reduce((s,p)=>s+(parseFloat(String(p.IMPORTE).replace(',','.'))||0),0);
+  let html='<div style="background:var(--accent-light);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'+
+    '<div style="font-size:13px;color:var(--accent);font-weight:600">'+lista.length+' pagos · últimos 3 meses</div>'+
+    '<div style="font-weight:700;font-size:15px;color:var(--accent)">$'+fmt(total)+'</div></div>';
+  html+=lista.map(p=>
+    '<div class="pend-row"><div><div style="font-weight:600">'+(p.USUARIO||'—')+'</div>'+
+    '<div class="pend-dia">'+fmtFecha(p.FECHA)+'</div></div>'+
+    '<div class="pend-saldo">$'+fmt(p.IMPORTE)+'</div></div>').join('');
+  cont.innerHTML=html;
 }
 
 // ── TABLERO ──────────────────────────────────
