@@ -222,11 +222,13 @@ async function cargarDatos(){
     datos.todas=t;
     datos.pagos=pg;
     datos.tablero=tab;
-    // Fecha/hora de la última actualización (fila meta del Tablero).
-    const meta=tab.find(r=>r.seccion==='meta'&&r.etiqueta==='actualizado');
-    ultimaAct=meta?meta.valor:'';
-    const cab=ultimaAct?('Actualizado el '+ultimaAct):'Actualizado';
-    setSyncStatus('ok',cab+' · '+a.length+' alumnos · '+c.length+' en concilio · '+pg.length+' pagos');
+    // Fechas de última actualización (filas meta del Tablero).
+    const metas={};
+    tab.forEach(r=>{ if(r.seccion==='meta') metas[r.etiqueta]=r.valor; });
+    ultimaAct=metas['actualizado']||'';
+    const cal=metas['cal']?fmtFecha(metas['cal']):'—';
+    const ban=metas['ban']?fmtFecha(metas['ban']):'—';
+    setSyncStatus('ok','Actualizado · Cal: '+cal+' · Ban: '+ban);
     renderizar();
   }catch(err){
     setSyncStatus('error','Error: '+err.message);
