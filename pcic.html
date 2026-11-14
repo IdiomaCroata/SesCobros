@@ -98,6 +98,21 @@
   .filter-bar{font-size:13px;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
   .filter-bar span{background:var(--accent-light);color:var(--accent);padding:3px 10px;border-radius:50px;font-weight:600;}
   .filter-bar button{background:none;border:none;color:var(--accent2);font-size:13px;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif;}
+
+  /* CUENTA CORRIENTE */
+  .cc-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
+  .cc-head{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;gap:10px;}
+  .cc-head:active{background:var(--surface2);}
+  .cc-nombre{font-weight:600;font-size:15px;}
+  .cc-badge{font-weight:700;font-size:14px;white-space:nowrap;}
+  .cc-caret{transition:transform 0.2s;flex-shrink:0;}
+  .cc-body{border-top:1px solid var(--border);background:var(--surface2);}
+  .cc-row{display:grid;grid-template-columns:62px 1fr auto;gap:8px;align-items:center;padding:9px 16px;font-size:13px;border-bottom:1px solid var(--border);}
+  .cc-row:last-child{border-bottom:none;}
+  .cc-row-head{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.3px;font-weight:600;background:var(--surface);}
+  .cc-fecha{color:var(--text2);}
+  .cc-mov{font-weight:500;}
+  .cc-saldo{text-align:right;font-weight:600;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -144,17 +159,16 @@
 </div>
 <div class="main">
   <div class="tabs">
-    <button class="tab active" onclick="cambiarTab('alumnos',this)">Alumnos <span class="count-badge" id="cnt-alumnos">—</span></button>
-    <button class="tab" onclick="cambiarTab('concilio',this)">Concilio <span class="count-badge" id="cnt-concilio">—</span></button>
-    <button class="tab" onclick="cambiarTab('todas',this)">Todas <span class="count-badge" id="cnt-todas">—</span></button>
-    <button class="tab" onclick="cambiarTab('pagos',this)">Pagos <span class="count-badge" id="cnt-pagos">—</span></button>
-    <button class="tab" onclick="cambiarTab('tablero',this)">Tablero</button>
+    <button class="tab active" data-tab="alumnos" onclick="cambiarTab('alumnos',this)">Alumnos <span class="count-badge" id="cnt-alumnos">—</span></button>
+    <button class="tab" data-tab="ctasctes" onclick="cambiarTab('ctasctes',this)">Ctas Ctes <span class="count-badge" id="cnt-ctasctes">—</span></button>
+    <button class="tab" data-tab="tablero" onclick="cambiarTab('tablero',this)">Tablero</button>
   </div>
   <div class="list active" id="list-alumnos"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
-  <div class="list" id="list-concilio"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
-  <div class="list" id="list-todas"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
-  <div class="list" id="list-pagos"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
+  <div class="list" id="list-ctasctes"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
   <div class="list" id="list-tablero"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Cargando...</div></div></div>
+  <!-- Vistas internas sin pestaña propia: la ficha del alumno (pestaña Alumnos) sigue usándolas -->
+  <div class="list" id="list-concilio"></div>
+  <div class="list" id="list-todas"></div>
 </div>
 
 <!-- MODAL -->
@@ -170,7 +184,7 @@
 const SHEET_ID='16nW-FjImbLavD6Tg00K8AdYp0G4hvicrq0DgSK69CR8';
 const API_KEY='AIzaSyAbXfah4gRFV7OoCi3kEN6j2f0oUxzOBwE';
 const PIN_CORRECTO='4860';
-let datos={alumnos:[],concilio:[],todas:[],pagos:[],tablero:[]};
+let datos={alumnos:[],concilio:[],todas:[],ctasctes:[],tablero:[]};
 let tabActual='alumnos';
 let filtroAlumno=null;
 let ultimaAct='';
@@ -213,14 +227,14 @@ async function leerHoja(nombre){
 async function cargarDatos(){
   setSyncStatus('loading','Cargando datos...');
   try{
-    const [a,c,t,pg,tab]=await Promise.all([
+    const [a,c,t,cc,tab]=await Promise.all([
       leerHoja('Usuarios'),leerHoja('Concilio'),leerHoja('Todas'),
-      leerHoja('Pagos').catch(()=>[]),
+      leerHoja('CtasCtes').catch(()=>[]),
       leerHoja('Tablero').catch(()=>[])]);
     datos.alumnos=a;
     datos.concilio=c;
     datos.todas=t;
-    datos.pagos=pg;
+    datos.ctasctes=cc;
     datos.tablero=tab;
     // Fechas de última actualización (filas meta del Tablero).
     const metas={};
@@ -239,6 +253,9 @@ function setSyncStatus(tipo,msg){
   document.getElementById('syncDot').className='sync-dot'+(tipo==='loading'?' loading':tipo==='error'?' error':'');
   document.getElementById('syncMsg').textContent=msg;
 }
+// Setea un contador sólo si el elemento existe (las pestañas Concilio/Todas ya
+// no están en el menú, pero sus funciones siguen alimentando la ficha del alumno).
+function setCount(id,n){ const e=document.getElementById(id); if(e) e.textContent=n; }
 
 // ── FORMATO ──────────────────────────────────
 function fmtFecha(val){
@@ -259,29 +276,78 @@ function renderizar(){
   renderAlumnos(q);
   renderConcilio(q);
   renderTodas(q);
-  renderPagos(q);
+  renderCtasCtes(q);
   renderTablero();
 }
 
-// PAGOS (últimos 3 meses: fecha · usuario webnom · importe)
-function renderPagos(q){
-  let lista=datos.pagos;
-  if(q) lista=lista.filter(p=>String(p.USUARIO||'').toLowerCase().includes(q));
-  document.getElementById('cnt-pagos').textContent=lista.length;
-  const cont=document.getElementById('list-pagos');
+// ── CUENTA CORRIENTE ─────────────────────────
+// Réplica de la pantalla de escritorio: un renglón por movimiento (sesión o
+// cobro) con el saldo corriente. Se agrupa por alumno; cada tarjeta se despliega
+// al tocarla. SALDO > 0 = debe; SALDO < 0 = saldo a favor.
+function ccNum(v){ return parseFloat(String(v).replace(',','.'))||0; }
+function ccSaldoFinal(g){ const u=g.rows[g.rows.length-1]; return u?ccNum(u.SALDO):0; }
+function ccSaldoTxt(s){ return s>0?('debe $'+fmt(s)):(s<0?('$'+fmt(-s)+' a favor'):'al día'); }
+function ccSaldoColor(s){ return s>0?'var(--accent2)':(s<0?'var(--accent)':'var(--text2)'); }
+
+function renderCtasCtes(q){
+  // Agrupar por alumno preservando el orden cronológico de los movimientos.
+  const grupos={},orden=[];
+  datos.ctasctes.forEach(r=>{
+    const key=r.IDPAC||r.USUARIO;
+    if(!grupos[key]){ grupos[key]={usuario:r.USUARIO,idpac:(r.IDPAC||''),rows:[]}; orden.push(key); }
+    grupos[key].rows.push(r);
+  });
+  let lista=orden.map(k=>grupos[k]);
+  if(q) lista=lista.filter(g=>String(g.usuario||'').toLowerCase().includes(q));
+  lista.sort((a,b)=>String(a.usuario).localeCompare(String(b.usuario),'es',{sensitivity:'base'}));
+  setCount('cnt-ctasctes',lista.length);
+  const cont=document.getElementById('list-ctasctes');
   if(!lista.length){
-    cont.innerHTML='<div class="empty"><div class="empty-icon">💸</div><div class="empty-text">'+(q?'Sin resultados':'Sin pagos en los últimos 3 meses')+'</div></div>';
+    cont.innerHTML='<div class="empty"><div class="empty-icon">📒</div><div class="empty-text">'+(q?'Sin resultados':'Sin cuentas corrientes todavía. Actualizá PCic desde la computadora.')+'</div></div>';
     return;
   }
-  const total=lista.reduce((s,p)=>s+(parseFloat(String(p.IMPORTE).replace(',','.'))||0),0);
+  let nDeben=0,nFavor=0;
+  lista.forEach(g=>{ const s=ccSaldoFinal(g); if(s>0)nDeben++; else if(s<0)nFavor++; });
   let html='<div style="background:var(--accent-light);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'+
-    '<div style="font-size:13px;color:var(--accent);font-weight:600">'+lista.length+' pagos · últimos 3 meses</div>'+
-    '<div style="font-weight:700;font-size:15px;color:var(--accent)">$'+fmt(total)+'</div></div>';
-  html+=lista.map(p=>
-    '<div class="pend-row"><div><div style="font-weight:600">'+(p.USUARIO||'—')+'</div>'+
-    '<div class="pend-dia">'+fmtFecha(p.FECHA)+'</div></div>'+
-    '<div class="pend-saldo">$'+fmt(p.IMPORTE)+'</div></div>').join('');
+    '<div style="font-size:13px;color:var(--accent);font-weight:600">'+lista.length+' alumnos</div>'+
+    '<div style="font-size:13px;color:var(--text2)">'+nDeben+' deben · '+nFavor+' a favor</div></div>';
+  html+=lista.map(ccCard).join('');
   cont.innerHTML=html;
+}
+
+function ccCard(g){
+  const s=ccSaldoFinal(g);
+  const idSafe='cc-'+String(g.idpac||g.usuario).replace(/[^A-Za-z0-9_]/g,'');
+  const filas=g.rows.map(r=>{
+    const ses=ccNum(r.SESION),pago=ccNum(r.PAGO),sal=ccNum(r.SALDO);
+    const esPago=!!String(r.MODO||'').trim()||pago>0;
+    const mov=esPago
+      ?'<span style="color:var(--accent)">Pago $'+fmt(pago)+'</span>'+(r.MODO?' <span style="color:var(--text2);font-size:11px">('+r.MODO+')</span>':'')
+      :'<span>Sesión $'+fmt(ses)+'</span>';
+    const salTxt=sal>0?('$'+fmt(sal)):(sal<0?('-$'+fmt(-sal)):'$0');
+    return '<div class="cc-row"><div class="cc-fecha">'+fmtFecha(r.FECHA)+'</div>'+
+      '<div class="cc-mov">'+mov+'</div>'+
+      '<div class="cc-saldo" style="color:'+ccSaldoColor(sal)+'">'+salTxt+'</div></div>';
+  }).join('');
+  return '<div class="cc-card">'+
+    '<div class="cc-head" onclick="toggleCC(\''+idSafe+'\')">'+
+      '<div class="cc-nombre">'+g.usuario+'</div>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<div class="cc-badge" style="color:'+ccSaldoColor(s)+'">'+ccSaldoTxt(s)+'</div>'+
+        '<div class="cc-caret" id="'+idSafe+'-c">›</div>'+
+      '</div></div>'+
+    '<div class="cc-body" id="'+idSafe+'" style="display:none">'+
+      '<div class="cc-row cc-row-head"><div class="cc-fecha">Fecha</div><div class="cc-mov">Movimiento</div><div class="cc-saldo">Saldo</div></div>'+
+      filas+
+    '</div></div>';
+}
+
+function toggleCC(id){
+  const b=document.getElementById(id),c=document.getElementById(id+'-c');
+  if(!b) return;
+  const abierto=b.style.display!=='none';
+  b.style.display=abierto?'none':'block';
+  if(c) c.style.transform=abierto?'none':'rotate(90deg)';
 }
 
 // ── TABLERO ──────────────────────────────────
@@ -388,7 +454,7 @@ function renderConcilio(q){
     grupos[key].total+=parseFloat(String(r.SALDO).replace(',','.'))||0;
   });
   const lista=Object.values(grupos).filter(g=>!q||g.nombre.toLowerCase().includes(q));
-  document.getElementById('cnt-concilio').textContent=lista.length;
+  setCount('cnt-concilio',lista.length);
   if(!lista.length){
     document.getElementById('list-concilio').innerHTML='<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">'+(q?'Sin resultados':'Sin deudas pendientes')+'</div></div>';
     return;
@@ -404,7 +470,7 @@ function renderTodas(q){
   let lista=datos.todas;
   if(filtroAlumno) lista=lista.filter(s=>(s.IDPAC||s.USUARIO)===filtroAlumno);
   if(q) lista=lista.filter(s=>s.USUARIO.toLowerCase().includes(q));
-  document.getElementById('cnt-todas').textContent=lista.length;
+  setCount('cnt-todas',lista.length);
   const cont=document.getElementById('list-todas');
   let extra='';
   if(filtroAlumno){
@@ -523,10 +589,15 @@ function cambiarTab(nombre,btn){
   tabActual=nombre;
 }
 function cambiarTabDirecto(nombre){
-  const idx={alumnos:0,concilio:1,todas:2}[nombre];
-  document.querySelectorAll('.tab').forEach((t,i)=>{ if(i===idx) t.classList.add('active'); else t.classList.remove('active'); });
+  // Muestra una vista por nombre; resalta su botón si existe. 'todas' ya no tiene
+  // botón en el menú (es el historial que abre la ficha del alumno), pero su
+  // contenedor sigue existiendo y se muestra igual.
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const btn=document.querySelector('.tab[data-tab="'+nombre+'"]');
+  if(btn) btn.classList.add('active');
   document.querySelectorAll('.list').forEach(l=>l.classList.remove('active'));
-  document.getElementById('list-'+nombre).classList.add('active');
+  const lst=document.getElementById('list-'+nombre);
+  if(lst) lst.classList.add('active');
   tabActual=nombre;
   renderizar();
 }
