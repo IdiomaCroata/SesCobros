@@ -315,39 +315,46 @@ function renderCtasCtes(q){
   cont.innerHTML=html;
 }
 
+// Tarjeta-resumen por alumno: al tocarla abre la cuenta corriente en el modal
+// (misma ventana en primer plano que la ficha de la pestaña Alumnos).
 function ccCard(g){
   const s=ccSaldoFinal(g);
-  const idSafe='cc-'+String(g.idpac||g.usuario).replace(/[^A-Za-z0-9_]/g,'');
-  const filas=g.rows.map(r=>{
-    const ses=ccNum(r.SESION),pago=ccNum(r.PAGO),sal=ccNum(r.SALDO);
-    const esPago=!!String(r.MODO||'').trim()||pago>0;
-    const mov=esPago
-      ?'<span style="color:var(--accent)">Pago $'+fmt(pago)+'</span>'+(r.MODO?' <span style="color:var(--text2);font-size:11px">('+r.MODO+')</span>':'')
-      :'<span>Sesión $'+fmt(ses)+'</span>';
-    const salTxt=sal>0?('$'+fmt(sal)):(sal<0?('-$'+fmt(-sal)):'$0');
-    return '<div class="cc-row"><div class="cc-fecha">'+fmtFecha(r.FECHA)+'</div>'+
-      '<div class="cc-mov">'+mov+'</div>'+
-      '<div class="cc-saldo" style="color:'+ccSaldoColor(sal)+'">'+salTxt+'</div></div>';
-  }).join('');
-  return '<div class="cc-card">'+
-    '<div class="cc-head" onclick="toggleCC(\''+idSafe+'\')">'+
-      '<div class="cc-nombre">'+g.usuario+'</div>'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-        '<div class="cc-badge" style="color:'+ccSaldoColor(s)+'">'+ccSaldoTxt(s)+'</div>'+
-        '<div class="cc-caret" id="'+idSafe+'-c">›</div>'+
-      '</div></div>'+
-    '<div class="cc-body" id="'+idSafe+'" style="display:none">'+
-      '<div class="cc-row cc-row-head"><div class="cc-fecha">Fecha</div><div class="cc-mov">Movimiento</div><div class="cc-saldo">Saldo</div></div>'+
-      filas+
-    '</div></div>';
+  const key=String(g.idpac||g.usuario).replace(/'/g,"\\'");
+  return '<div class="alu-card" onclick="abrirCtaCte(\''+key+'\')"><div class="alu-card-inner">'+
+    '<div class="alu-nombre">'+g.usuario+'</div>'+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<div class="cc-badge" style="color:'+ccSaldoColor(s)+'">'+ccSaldoTxt(s)+'</div>'+
+      '<div style="color:var(--text2);font-size:20px">›</div>'+
+    '</div></div></div>';
 }
 
-function toggleCC(id){
-  const b=document.getElementById(id),c=document.getElementById(id+'-c');
-  if(!b) return;
-  const abierto=b.style.display!=='none';
-  b.style.display=abierto?'none':'block';
-  if(c) c.style.transform=abierto?'none':'rotate(90deg)';
+// Un renglón de movimiento (sesión o cobro) con su saldo corriente.
+function ccFilaHtml(r){
+  const ses=ccNum(r.SESION),pago=ccNum(r.PAGO),sal=ccNum(r.SALDO);
+  const esPago=!!String(r.MODO||'').trim()||pago>0;
+  const mov=esPago
+    ?'<span style="color:var(--accent)">Pago $'+fmt(pago)+'</span>'+(r.MODO?' <span style="color:var(--text2);font-size:11px">('+r.MODO+')</span>':'')
+    :'<span>Sesión $'+fmt(ses)+'</span>';
+  const salTxt=sal>0?('$'+fmt(sal)):(sal<0?('-$'+fmt(-sal)):'$0');
+  return '<div class="cc-row"><div class="cc-fecha">'+fmtFecha(r.FECHA)+'</div>'+
+    '<div class="cc-mov">'+mov+'</div>'+
+    '<div class="cc-saldo" style="color:'+ccSaldoColor(sal)+'">'+salTxt+'</div></div>';
+}
+
+// Abre la cuenta corriente del alumno en el modal (overlay en primer plano).
+function abrirCtaCte(key){
+  const rows=datos.ctasctes.filter(r=>(r.IDPAC||r.USUARIO)===key);
+  if(!rows.length) return;
+  const usuario=rows[0].USUARIO||key;
+  const s=ccNum(rows[rows.length-1].SALDO);
+  let html='<div class="modal-title">'+usuario+'</div>';
+  html+='<div style="margin-bottom:14px"><span class="cc-badge" style="color:'+ccSaldoColor(s)+';font-size:16px">'+ccSaldoTxt(s)+'</span></div>';
+  html+='<div class="cc-card"><div class="cc-body" style="display:block">'+
+    '<div class="cc-row cc-row-head"><div class="cc-fecha">Fecha</div><div class="cc-mov">Movimiento</div><div class="cc-saldo">Saldo</div></div>'+
+    rows.map(ccFilaHtml).join('')+
+    '</div></div>';
+  document.getElementById('modalContent').innerHTML=html;
+  document.getElementById('modalOverlay').classList.add('open');
 }
 
 // ── TABLERO ──────────────────────────────────
